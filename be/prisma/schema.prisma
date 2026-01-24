@@ -1,0 +1,113 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [uuid_ossp(map: "uuid-ossp", schema: "extensions")]
+}
+
+model ActivityLog {
+  id         String   @id
+  action     String
+  content    String
+  group_id   String
+  actor_id   String   @db.Uuid
+  created_at DateTime @default(now())
+  profiles   profiles @relation(fields: [actor_id], references: [id])
+  Group      Group    @relation(fields: [group_id], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id           String         @id
+  description  String
+  amount       Decimal        @db.Decimal(15, 2)
+  image_url    String?
+  date         DateTime       @default(now())
+  category     String         @default("General")
+  note         String?
+  group_id     String
+  payer_id     String
+  created_at   DateTime       @default(now())
+  updated_at   DateTime
+  Group        Group          @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  GroupMember  GroupMember    @relation(fields: [payer_id], references: [id])
+  ExpenseSplit ExpenseSplit[]
+}
+
+model ExpenseSplit {
+  id          String      @id
+  amount      Decimal     @db.Decimal(15, 2)
+  percentage  Decimal?    @db.Decimal(5, 2)
+  expense_id  String
+  member_id   String
+  Expense     Expense     @relation(fields: [expense_id], references: [id], onDelete: Cascade)
+  GroupMember GroupMember @relation(fields: [member_id], references: [id])
+
+  @@unique([expense_id, member_id])
+}
+
+model Group {
+  id          String        @id
+  name        String
+  cover_image String?
+  currency    String        @default("VND")
+  invite_code String        @unique
+  created_by  String        @db.Uuid
+  created_at  DateTime      @default(now())
+  updated_at  DateTime
+  ActivityLog ActivityLog[]
+  Expense     Expense[]
+  profiles    profiles      @relation(fields: [created_by], references: [id])
+  GroupMember GroupMember[]
+  Settlement  Settlement[]
+}
+
+model GroupMember {
+  id                                             String         @id
+  group_id                                       String
+  user_id                                        String?        @db.Uuid
+  is_virtual                                     Boolean        @default(false)
+  temp_name                                      String?
+  role                                           String         @default("MEMBER")
+  joined_at                                      DateTime       @default(now())
+  Expense                                        Expense[]
+  ExpenseSplit                                   ExpenseSplit[]
+  Group                                          Group          @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  profiles                                       profiles?      @relation(fields: [user_id], references: [id])
+  Settlement_Settlement_receiver_idToGroupMember Settlement[]   @relation("Settlement_receiver_idToGroupMember")
+  Settlement_Settlement_sender_idToGroupMember   Settlement[]   @relation("Settlement_sender_idToGroupMember")
+
+  @@unique([group_id, user_id])
+}
+
+model Settlement {
+  id                                              String      @id
+  amount                                          Decimal     @db.Decimal(15, 2)
+  note                                            String?
+  image_url                                       String?
+  group_id                                        String
+  sender_id                                       String
+  receiver_id                                     String
+  created_at                                      DateTime    @default(now())
+  Group                                           Group       @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  GroupMember_Settlement_receiver_idToGroupMember GroupMember @relation("Settlement_receiver_idToGroupMember", fields: [receiver_id], references: [id])
+  GroupMember_Settlement_sender_idToGroupMember   GroupMember @relation("Settlement_sender_idToGroupMember", fields: [sender_id], references: [id])
+}
+
+model profiles {
+  id           String        @id @db.Uuid
+  email        String        @unique
+  name         String?
+  avatar_url   String?
+  phone        String?       @unique
+  payment_info Json?
+  created_at   DateTime      @default(now())
+  updated_at   DateTime
+  ActivityLog  ActivityLog[]
+  Group        Group[]
+  GroupMember  GroupMember[]
+}

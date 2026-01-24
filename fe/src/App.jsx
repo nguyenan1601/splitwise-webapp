@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route } from "react-router-dom";
+import { PublicLayout, DashboardLayout } from "./layouts";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import {
+  LandingPage,
+  LoginPage,
+  RegisterPage,
+  DashboardPage,
+  ProfilePage,
+  GroupsPage,
+  CreateGroupPage,
+  GroupDetailPage,
+  AddExpensePage,
+  SettlePaymentPage,
+  NotFoundPage,
+} from "./pages";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Routes>
+      {/* Public Routes */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
+
+      {/* Protected Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/profile" element={<ProfilePage />} />
+          <Route path="/groups" element={<GroupsPage />} />
+          <Route path="/groups/create" element={<CreateGroupPage />} />
+          <Route path="/groups/join" element={<GroupsPage />} />
+          <Route path="/groups/:id" element={<GroupDetailPage />} />
+          <Route path="/groups/:id/add-expense" element={<AddExpensePage />} />
+          <Route path="/groups/:id/settle" element={<SettlePaymentPage />} />
+        </Route>
+      </Route>
+
+      {/* 404 */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
